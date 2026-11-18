@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/acf-usage.php';
+
 function wp_rebuild_mapper_discover_relationships( $pages ) {
 	$page_parents = array();
 	foreach ( $pages as $page ) {
@@ -19,6 +21,7 @@ function wp_rebuild_mapper_discover_relationships( $pages ) {
 		'page_parents'              => $page_parents,
 		'other_post_parents'        => wp_rebuild_mapper_other_post_parents(),
 		'term_assignment_counts'   => wp_rebuild_mapper_term_assignment_counts(),
+		'acf_post_field_usage'      => wp_rebuild_mapper_acf_post_field_usage(),
 	);
 }
 
