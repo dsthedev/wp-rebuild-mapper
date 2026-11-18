@@ -18,6 +18,12 @@ Check **Include schema** before exporting to add the `schema` section. It lists 
 
 `schema.acf` lists field group definitions that ACF exposes at export time, including groups loaded from the database, PHP, or Local JSON. Location rules retain ACF's grouping: rules within a group are ANDed, and groups are ORed. Fields include their keys, names, labels, and types, plus nested fields and flexible content layouts where available. Options pages are listed when ACF Pro exposes them; `options_pages: null` means that API is unavailable. `schema.acf` is `null` when the field discovery APIs are unavailable. This section does not include field defaults, saved values, or options page contents.
 
+## Optional relationship export
+
+Check **Include relationships** to add `relationships` independently of **Include schema**. `page_parents` lists nonzero parent IDs from the existing page map. `other_post_parents` lists stored parent links for other registered hierarchical post types, across all statuses. A stored parent ID does not guarantee that the parent still exists.
+
+`term_assignment_counts` lists `taxonomy`, `term_id`, `post_type`, and `post_count` for direct assignments between existing terms and posts of types currently attached to the taxonomy. Counts include all post statuses, do not roll up child terms into their parents, and omit combinations with no assignments. Individual post-to-term links and ACF relationships are not included. `null` means a lookup failed; an empty list means no records matched.
+
 ## Smoke test
 
 1. On a disposable site, create a published parent page and a draft child with a custom template. Set the front and posts pages under **Settings > Reading**.
@@ -26,3 +32,4 @@ Check **Include schema** before exporting to add the `schema` section. It lists 
 4. Export with **Include schema** selected. Check that an empty registered taxonomy appears with an empty term list, and that a known child term points to its parent. Export with the checkbox cleared and verify the report lists only `content` and has no `schema` key.
 5. In `schema.observed_post_meta`, spot-check a known custom field against the number of posts that have it. Multiple rows for that key on a single post should not increase the count.
 6. With ACF active, compare a known field group's location rules and nested fields against the export. With ACF inactive on a disposable site, check that `schema.acf` is `null` and the rest of the schema still exports.
+7. Export with **Include relationships** selected and **Include schema** cleared. Check a known page parent and a known term's direct assignment count for one post type. Export with **Include relationships** cleared and verify the `relationships` section is absent.

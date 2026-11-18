@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/includes/content.php';
 require_once __DIR__ . '/includes/schema.php';
+require_once __DIR__ . '/includes/relationships.php';
 
 add_action( 'admin_menu', 'wp_rebuild_mapper_register_page' );
 add_action( 'admin_post_wp_rebuild_mapper_export', 'wp_rebuild_mapper_export' );
@@ -41,6 +42,11 @@ function wp_rebuild_mapper_render_page() {
 			<label>
 				<input type="checkbox" name="include_schema" value="1">
 				<?php esc_html_e( 'Include schema (post type settings, taxonomies, and terms)', 'wp-rebuild-mapper' ); ?>
+			</label>
+			<br>
+			<label>
+				<input type="checkbox" name="include_relationships" value="1">
+				<?php esc_html_e( 'Include relationships (post parents and term assignment counts)', 'wp-rebuild-mapper' ); ?>
 			</label>
 			<?php submit_button( __( 'Export JSON', 'wp-rebuild-mapper' ) ); ?>
 		</form>
@@ -72,6 +78,11 @@ function wp_rebuild_mapper_export() {
 	if ( '1' === ( $_POST['include_schema'] ?? '' ) ) {
 		$report['included_sections'][] = 'schema';
 		$report['schema']              = wp_rebuild_mapper_discover_schema();
+	}
+
+	if ( '1' === ( $_POST['include_relationships'] ?? '' ) ) {
+		$report['included_sections'][] = 'relationships';
+		$report['relationships']       = wp_rebuild_mapper_discover_relationships( $report['content']['pages'] );
 	}
 
 	$json = wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
