@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/acf.php';
+
 function wp_rebuild_mapper_discover_schema() {
 	$post_types = get_post_types( array(), 'objects' );
 	$taxonomies = get_taxonomies( array(), 'objects' );
@@ -51,6 +53,7 @@ function wp_rebuild_mapper_discover_schema() {
 		'post_types'         => $post_type_schema,
 		'taxonomies'         => $taxonomy_schema,
 		'observed_post_meta' => wp_rebuild_mapper_observed_post_meta( array_keys( $post_types ) ),
+		'acf'                => wp_rebuild_mapper_discover_acf(),
 	);
 }
 
