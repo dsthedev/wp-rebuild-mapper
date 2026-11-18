@@ -56,6 +56,7 @@ Add a minimal **Tools → Rebuild Mapper** screen with checkboxes for Content, S
 - Follow WordPress coding standards and supported APIs.
 - ACF integration must be optional: the plugin works without ACF installed.
 - Prefer `get_post_types()`, `get_taxonomies()`, `get_terms()`, `get_posts()` / `WP_Query`, metadata APIs, and documented ACF APIs.
+  - but if acfpro is present, leverage its APIs for field discovery.
 - Use read-only SQL only when APIs cannot efficiently provide aggregate data; respect the configured table prefix and prepare variable SQL inputs.
 - Keep discovery separate from report formatting/export.
 - Favor small functions and classes over a complex plugin framework or unnecessary OOP layers.
