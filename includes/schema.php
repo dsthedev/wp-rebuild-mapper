@@ -48,9 +48,46 @@ function wp_rebuild_mapper_discover_schema() {
 	}
 
 	return array(
-		'post_types' => $post_type_schema,
-		'taxonomies' => $taxonomy_schema,
+		'post_types'         => $post_type_schema,
+		'taxonomies'         => $taxonomy_schema,
+		'observed_post_meta' => wp_rebuild_mapper_observed_post_meta( array_keys( $post_types ) ),
 	);
+}
+
+function wp_rebuild_mapper_observed_post_meta( $post_types ) {
+	global $wpdb;
+
+	if ( ! $post_types ) {
+		return array();
+	}
+
+	$placeholders = implode( ', ', array_fill( 0, count( $post_types ), '%s' ) );
+	$previous_suppression = $wpdb->suppress_errors();
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT posts.post_type, meta.meta_key, COUNT(DISTINCT meta.post_id) AS post_count
+			 FROM {$wpdb->posts} AS posts
+			 INNER JOIN {$wpdb->postmeta} AS meta ON meta.post_id = posts.ID
+			 WHERE posts.post_type IN ($placeholders) AND meta.meta_key IS NOT NULL
+			 GROUP BY posts.post_type, meta.meta_key, CAST(meta.meta_key AS BINARY)
+			 ORDER BY posts.post_type, CAST(meta.meta_key AS BINARY)",
+			$post_types
+		),
+		ARRAY_A
+	);
+	$query_failed = '' !== $wpdb->last_error;
+	$wpdb->suppress_errors( $previous_suppression );
+
+	if ( $query_failed || ! is_array( $rows ) ) {
+		return null;
+	}
+
+	foreach ( $rows as &$row ) {
+		$row['post_count'] = (int) $row['post_count'];
+	}
+	unset( $row );
+
+	return $rows;
 }
 
 function wp_rebuild_mapper_schema_rewrite( $rewrite, $keys ) {
