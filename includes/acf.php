@@ -69,6 +69,19 @@ function wp_rebuild_mapper_acf_fields( $fields ) {
 			'type'  => $field['type'],
 		);
 
+		if ( in_array( $field['type'], array( 'relationship', 'post_object' ), true ) ) {
+			$record['target_filters'] = array(
+				'post_types'   => wp_rebuild_mapper_acf_filter_values( $field['post_type'] ?? null ),
+				'post_statuses' => wp_rebuild_mapper_acf_filter_values( $field['post_status'] ?? null ),
+				'terms'         => wp_rebuild_mapper_acf_filter_values( $field['taxonomy'] ?? null ),
+			);
+		} elseif ( 'taxonomy' === $field['type'] ) {
+			$taxonomy = $field['taxonomy'] ?? null;
+			$record['target_filters'] = array(
+				'taxonomy' => is_string( $taxonomy ) && '' !== $taxonomy ? $taxonomy : null,
+			);
+		}
+
 		if ( isset( $field['sub_fields'] ) || in_array( $field['type'], array( 'group', 'repeater' ), true ) ) {
 			$record['sub_fields'] = wp_rebuild_mapper_acf_fields( $field['sub_fields'] ?? array() );
 		}
@@ -88,4 +101,15 @@ function wp_rebuild_mapper_acf_fields( $fields ) {
 		$records[] = $record;
 	}
 	return $records;
+}
+
+function wp_rebuild_mapper_acf_filter_values( $setting ) {
+	$values = array();
+	foreach ( (array) $setting as $value ) {
+		if ( is_string( $value ) && '' !== $value ) {
+			$values[] = $value;
+		}
+	}
+	sort( $values, SORT_STRING );
+	return $values;
 }
