@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/includes/content.php';
 require_once __DIR__ . '/includes/schema.php';
 require_once __DIR__ . '/includes/relationships.php';
+require_once __DIR__ . '/includes/markdown.php';
 
 add_action( 'admin_menu', 'wp_rebuild_mapper_register_page' );
 add_action( 'admin_post_wp_rebuild_mapper_export', 'wp_rebuild_mapper_export' );
@@ -48,7 +49,10 @@ function wp_rebuild_mapper_render_page() {
 				<input type="checkbox" name="include_relationships" value="1">
 				<?php esc_html_e( 'Include relationships (post parents and term assignment counts)', 'wp-rebuild-mapper' ); ?>
 			</label>
-			<?php submit_button( __( 'Export JSON', 'wp-rebuild-mapper' ) ); ?>
+			<p class="submit">
+				<button type="submit" name="export_format" value="json" class="button button-primary"><?php esc_html_e( 'Export JSON', 'wp-rebuild-mapper' ); ?></button>
+				<button type="submit" name="export_format" value="markdown" class="button"><?php esc_html_e( 'Export Markdown', 'wp-rebuild-mapper' ); ?></button>
+			</p>
 		</form>
 	</div>
 	<?php
@@ -85,15 +89,20 @@ function wp_rebuild_mapper_export() {
 		$report['relationships']       = wp_rebuild_mapper_discover_relationships( $report['content']['pages'] );
 	}
 
-	$json = wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
-	if ( false === $json ) {
+	$markdown = 'markdown' === ( $_POST['export_format'] ?? '' );
+	$output   = $markdown
+		? wp_rebuild_mapper_render_markdown( $report )
+		: wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+	if ( false === $output ) {
 		wp_die( esc_html__( 'The content report could not be encoded.', 'wp-rebuild-mapper' ), '', array( 'response' => 500 ) );
 	}
 
 	nocache_headers();
-	header( 'Content-Type: application/json; charset=UTF-8' );
-	header( 'Content-Disposition: attachment; filename="wp-rebuild-mapper.json"' );
+	$content_type = $markdown ? 'text/markdown' : 'application/json';
+	$extension    = $markdown ? 'md' : 'json';
+	header( 'Content-Type: ' . $content_type . '; charset=UTF-8' );
+	header( 'Content-Disposition: attachment; filename="wp-rebuild-mapper.' . $extension . '"' );
 	header( 'X-Content-Type-Options: nosniff' );
-	echo $json . "\n";
+	echo $output . "\n";
 	exit;
 }

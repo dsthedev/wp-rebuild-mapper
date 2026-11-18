@@ -10,6 +10,10 @@ Report version 1 includes registered post types and counts by status, reading se
 
 The export excludes post bodies, authors, and raw metadata. It still includes unpublished page titles and structure, so review it before sharing.
 
+## Markdown export
+
+Select **Export Markdown** for a readable summary of the same report. It includes a text page tree and, for up to 100 pages, a Mermaid diagram that renders in compatible Markdown viewers. Missing parents and parent cycles are labeled; the diagram breaks cyclic links so the remaining hierarchy can be drawn. The Schema and Relationships checkboxes add summaries to Markdown. Use **Export JSON** for the full records.
+
 ## Optional schema export
 
 Check **Include schema** before exporting to add the `schema` section. It lists registered post type settings, supported feature names, and attached taxonomies, plus registered taxonomies and their terms. Follow each term's `parent_id` within its taxonomy; `0` is a root. Unused terms are included. A taxonomy with no terms has `terms: []`; `terms: null` means WordPress returned an error while listing terms.
