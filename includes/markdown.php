@@ -4,6 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/markdown-schema.php';
+
 function wp_rebuild_mapper_render_markdown( $report ) {
 	$content = $report['content'];
 	$lines   = array(
@@ -30,6 +32,7 @@ function wp_rebuild_mapper_render_markdown( $report ) {
 		$lines[] = '- Registered taxonomies: ' . count( $schema['taxonomies'] );
 		$lines[] = '- Observed metadata key entries: ' . wp_rebuild_mapper_markdown_count( $schema['observed_post_meta'] );
 		$lines[] = '- ACF field groups: ' . wp_rebuild_mapper_markdown_count( $schema['acf']['field_groups'] ?? null );
+		$lines   = array_merge( $lines, wp_rebuild_mapper_markdown_schema( $schema ) );
 	}
 	if ( isset( $report['relationships'] ) ) {
 		$relationships = $report['relationships'];
@@ -40,6 +43,7 @@ function wp_rebuild_mapper_render_markdown( $report ) {
 		$lines[]       = '- Other post parent links: ' . wp_rebuild_mapper_markdown_count( $relationships['other_post_parents'] );
 		$lines[]       = '- Term assignment count entries: ' . wp_rebuild_mapper_markdown_count( $relationships['term_assignment_counts'] );
 		$lines[]       = '- ACF field usage entries: ' . wp_rebuild_mapper_markdown_count( $relationships['acf_post_field_usage'] );
+		$lines         = array_merge( $lines, wp_rebuild_mapper_markdown_acf_usage( $relationships['acf_post_field_usage'] ) );
 	}
 	return implode( "\n", $lines );
 }

@@ -14,6 +14,21 @@ The export excludes post bodies, authors, and raw metadata. It still includes un
 
 Select **Export Markdown** for a readable summary of the same report. It includes a text page tree and, for up to 100 pages, a Mermaid diagram that renders in compatible Markdown viewers. Missing parents and parent cycles are labeled; the diagram breaks cyclic links so the remaining hierarchy can be drawn. The Schema and Relationships checkboxes add summaries to Markdown. Use **Export JSON** for the full records.
 
+### Content model breakdown
+
+Select **Include schema**, then **Export Markdown** for plain headings and tables describing the content model. No diagram viewer is needed for this breakdown:
+
+- Registered post types, their public and hierarchy settings, attached taxonomies, and explicit ACF field group references.
+- Registered taxonomies, including categories and tags, their attached post types, and term tables with named parents and IDs.
+- Every exposed ACF field group, its active state and full placement rules, plus field tables with labels, names, types, keys, nested paths, and configured relationship targets.
+- ACF options pages when discovery is available.
+
+Post type and taxonomy group references identify explicit `==` location rules only. They are not an evaluation of where fields appear: additional AND conditions, OR alternatives, exclusions, templates, specific pages, options pages, and custom location rules must be read in the field group catalogue. Inactive groups are labeled. A missing direct reference does not mean an object has no fields. All registered post types are listed, including WordPress and plugin internals; the report does not infer which are custom from their names or claim ACF registered them.
+
+Nested field paths preserve group/repeater containers and flexible-content layouts. Relationship targets are configured permissions, not proof of saved links; no explicit target restriction does not override ACF defaults or runtime filters. Clone expansion and settings absent from discovery are not inferred. Other metadata is not automatically classified as an ACF field.
+
+Also select **Include relationships** for an observed ACF relationship usage table with source post counts for saved values, valid targets, missing targets, and mismatched targets. These counts are not individual links and outcomes can overlap. Empty results, unavailable lookups, and unsupported scan locations are distinguished. The existing usage scan limitations below still apply. JSON discovery and the read-only export behavior are unchanged.
+
 ## Optional schema export
 
 Check **Include schema** before exporting to add the `schema` section. It lists registered post type settings, supported feature names, and attached taxonomies, plus registered taxonomies and their terms. Follow each term's `parent_id` within its taxonomy; `0` is a root. Unused terms are included. A taxonomy with no terms has `terms: []`; `terms: null` means WordPress returned an error while listing terms.
@@ -45,3 +60,4 @@ Usage includes top-level fields and direct subfields of top-level repeaters. Sub
 7. Export with **Include relationships** selected and **Include schema** cleared. Check a known page parent and a known term's direct assignment count for one post type. Export with **Include relationships** cleared and verify the `relationships` section is absent.
 8. Compare a top-level ACF relationship field with an empty selection and a known valid selection. The empty selection should not increase `posts_with_valid`, and multiple valid targets on one post should increase it by only one.
 9. Save multiple repeater rows with valid links in the same subfield on one post. Confirm that post contributes only once to the subfield's `posts_with_valid`, and check that any stale metadata beyond the saved row count does not contribute.
+10. Export Markdown with schema and relationships selected. Compare a known post type's attached taxonomies and a taxonomy's named term parents against WordPress. Compare an ACF group's full AND/OR rules, active state, nested field paths, and relationship targets against ACF. A template-only group must remain in the catalogue without being automatically assigned to every post type; unrestricted targets must not become guessed links. Check that pipes, newlines, HTML, and Markdown characters in labels cannot split table rows or insert markup. With ACF unavailable, the post type and taxonomy tables must still render with an explicit ACF-unavailable message. With relationships selected alone, usage tables must still render independently of schema.
