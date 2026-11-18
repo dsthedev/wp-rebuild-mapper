@@ -14,25 +14,42 @@ function wp_rebuild_mapper_acf_post_field_usage() {
 	$usage      = array();
 	foreach ( $acf['field_groups'] as $group ) {
 		foreach ( $group['fields'] as $field ) {
-			if ( '' === $field['name'] || ! isset( $field['target_filters'] ) ) {
+			if ( '' === $field['name'] ) {
 				continue;
 			}
-			$counts = wp_rebuild_mapper_acf_count_post_field( $field, $post_types );
-			$usage[] = array(
-				'group_key'      => $group['key'],
-				'field_key'      => $field['key'],
-				'field_name'     => $field['name'],
-				'field_type'     => $field['type'],
-				'by_post_type'   => $counts,
-			);
+			if ( isset( $field['target_filters'] ) ) {
+				$usage[] = wp_rebuild_mapper_acf_usage_record( $group['key'], $field, $post_types );
+			} elseif ( 'repeater' === $field['type'] ) {
+				foreach ( $field['sub_fields'] as $child ) {
+					if ( '' !== $child['name'] && isset( $child['target_filters'] ) ) {
+						$usage[] = wp_rebuild_mapper_acf_usage_record( $group['key'], $child, $post_types, $field );
+					}
+				}
+			}
 		}
 	}
 	return $usage;
 }
 
-function wp_rebuild_mapper_acf_count_post_field( $field, $post_types ) {
+function wp_rebuild_mapper_acf_usage_record( $group_key, $field, $post_types, $repeater = null ) {
+	$record = array(
+		'group_key'  => $group_key,
+		'field_key'  => $field['key'],
+		'field_name' => $field['name'],
+		'field_type' => $field['type'],
+	);
+	if ( null !== $repeater ) {
+		$record['repeater_key']  = $repeater['key'];
+		$record['repeater_name'] = $repeater['name'];
+	}
+	$record['by_post_type'] = wp_rebuild_mapper_acf_count_post_field( $field, $post_types, $repeater );
+	return $record;
+}
+
+function wp_rebuild_mapper_acf_count_post_field( $field, $post_types, $repeater = null ) {
 	global $wpdb;
 
+	$lookup     = $repeater ?? $field;
 	$counts     = array();
 	$last_id    = 0;
 	$batch_size = 200;
@@ -51,16 +68,28 @@ function wp_rebuild_mapper_acf_count_post_field( $field, $post_types ) {
 			     AND BINARY reference.meta_value = %s
 			 )
 			 ORDER BY posts.ID LIMIT %d",
-			array( $field['name'], $field['name'], $last_id, '_' . $field['name'], '_' . $field['name'], $field['key'], $batch_size )
+			array( $lookup['name'], $lookup['name'], $last_id, '_' . $lookup['name'], '_' . $lookup['name'], $lookup['key'], $batch_size )
 		);
 		if ( null === $rows ) {
 			return null;
+		}
+
+		$repeater_values = array();
+		if ( null !== $repeater ) {
+			$repeater_values = wp_rebuild_mapper_acf_repeater_values( $rows, $repeater['name'], $field );
+			if ( null === $repeater_values ) {
+				return null;
+			}
 		}
 
 		foreach ( $rows as $row ) {
 			$last_id   = (int) $row['ID'];
 			$post_type = $row['post_type'];
 			if ( ! isset( $post_types[ $post_type ] ) ) {
+				continue;
+			}
+			$values = null === $repeater ? array( $row['meta_value'] ) : ( $repeater_values[ $last_id ] ?? array() );
+			if ( ! $values ) {
 				continue;
 			}
 
@@ -76,8 +105,10 @@ function wp_rebuild_mapper_acf_count_post_field( $field, $post_types ) {
 			++$counts[ $post_type ]['posts_with_saved_value'];
 
 			$outcomes = array();
-			foreach ( wp_rebuild_mapper_acf_saved_ids( $row['meta_value'] ) as $target_id ) {
-				$outcomes[ wp_rebuild_mapper_acf_target_outcome( $target_id, $field ) ] = true;
+			foreach ( $values as $value ) {
+				foreach ( wp_rebuild_mapper_acf_saved_ids( $value ) as $target_id ) {
+					$outcomes[ wp_rebuild_mapper_acf_target_outcome( $target_id, $field ) ] = true;
+				}
 			}
 			foreach ( $outcomes as $outcome => $present ) {
 				++$counts[ $post_type ][ 'posts_with_' . $outcome ];
@@ -87,6 +118,57 @@ function wp_rebuild_mapper_acf_count_post_field( $field, $post_types ) {
 
 	ksort( $counts, SORT_STRING );
 	return array_values( $counts );
+}
+
+function wp_rebuild_mapper_acf_repeater_values( $rows, $repeater_name, $field ) {
+	global $wpdb;
+
+	$row_counts = array();
+	foreach ( $rows as $row ) {
+		$stored = $row['meta_value'];
+		$count  = (int) $stored;
+		if ( $count > 0 && (string) $count === $stored ) {
+			$row_counts[ (int) $row['ID'] ] = $count;
+		}
+	}
+	if ( ! $row_counts ) {
+		return array();
+	}
+
+	$prefix       = $repeater_name . '_';
+	$suffix       = '_' . $field['name'];
+	$like         = $wpdb->esc_like( $prefix ) . '%' . $wpdb->esc_like( $suffix );
+	$pattern      = '/\A' . preg_quote( $prefix, '/' ) . '(0|[1-9][0-9]*)' . preg_quote( $suffix, '/' ) . '\z/';
+	$placeholders = implode( ', ', array_fill( 0, count( $row_counts ), '%d' ) );
+	$children     = wp_rebuild_mapper_relationship_rows(
+		"SELECT stored.post_id, stored.meta_key, stored.meta_value
+		 FROM {$wpdb->postmeta} AS stored
+		 WHERE stored.post_id IN ($placeholders) AND stored.meta_key LIKE %s AND EXISTS (
+		     SELECT 1 FROM {$wpdb->postmeta} AS reference
+		     WHERE reference.post_id = stored.post_id
+		     AND reference.meta_key = CONCAT('_', stored.meta_key)
+		     AND BINARY reference.meta_key = BINARY CONCAT('_', stored.meta_key)
+		     AND BINARY reference.meta_value = %s
+		 )
+		 ORDER BY stored.meta_id",
+		array_merge( array_keys( $row_counts ), array( $like, $field['key'] ) )
+	);
+	if ( null === $children ) {
+		return null;
+	}
+
+	$values = array();
+	foreach ( $children as $child ) {
+		$post_id = (int) $child['post_id'];
+		if ( ! preg_match( $pattern, $child['meta_key'], $matches ) || (int) $matches[1] >= $row_counts[ $post_id ] ) {
+			continue;
+		}
+		$row_index = (int) $matches[1];
+		if ( ! array_key_exists( $row_index, $values[ $post_id ] ?? array() ) ) {
+			$values[ $post_id ][ $row_index ] = $child['meta_value'];
+		}
+	}
+	return $values;
 }
 
 function wp_rebuild_mapper_acf_saved_ids( $stored ) {
