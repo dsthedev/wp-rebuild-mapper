@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/includes/content.php';
+require_once __DIR__ . '/includes/schema.php';
 
 add_action( 'admin_menu', 'wp_rebuild_mapper_register_page' );
 add_action( 'admin_post_wp_rebuild_mapper_export', 'wp_rebuild_mapper_export' );
@@ -37,6 +38,10 @@ function wp_rebuild_mapper_render_page() {
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="wp_rebuild_mapper_export">
 			<?php wp_nonce_field( 'wp_rebuild_mapper_export', '_wpnonce', false ); ?>
+			<label>
+				<input type="checkbox" name="include_schema" value="1">
+				<?php esc_html_e( 'Include schema (post type settings, taxonomies, and terms)', 'wp-rebuild-mapper' ); ?>
+			</label>
 			<?php submit_button( __( 'Export JSON', 'wp-rebuild-mapper' ) ); ?>
 		</form>
 	</div>
@@ -63,6 +68,11 @@ function wp_rebuild_mapper_export() {
 		'included_sections' => array( 'content' ),
 		'content'           => wp_rebuild_mapper_discover_content(),
 	);
+
+	if ( '1' === ( $_POST['include_schema'] ?? '' ) ) {
+		$report['included_sections'][] = 'schema';
+		$report['schema']              = wp_rebuild_mapper_discover_schema();
+	}
 
 	$json = wp_json_encode( $report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
 	if ( false === $json ) {
