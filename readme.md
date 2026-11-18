@@ -2,6 +2,16 @@
 
 A small utility plugin to map existing custom content structures to use as a reference when rebuilding a WordPress website.
 
+## Build Content Map
+
+Open **Tools > Rebuild Mapper** and select **Build Content Map** to display the report directly in WordPress admin. Schema and relationships are selected by default; uncheck either to leave that section out. Content is always included. The initial page load does not run discovery.
+
+The report uses collapsed-by-default, keyboard-accessible accordions for the content summary, page hierarchy, registered post types, taxonomies, ACF field groups, options pages, and relationship usage. Each taxonomy and field group has its own nested accordion. Tables scroll horizontally on narrow screens. All discovered text is escaped for HTML output.
+
+Builds and exports share the same report builder. Building requires an administrator capability and a valid nonce. Reports are generated for the current request only: the plugin does not save snapshots in the database, localStorage, or sessionStorage. Reloading the Tools page with a GET request clears the displayed report; refreshing a POST may prompt the browser to rebuild it. Every build starts with all accordions closed. Reports still include unpublished structure, so treat the displayed information and downloads as private.
+
+**Export JSON** and **Export Markdown** remain available as smaller secondary buttons and use the currently selected checkboxes. Each export generates a fresh report rather than downloading a stored copy of the displayed report, so changes to the site between requests can change the results.
+
 ## Content export
 
 Activate the plugin on WordPress with PHP 7.4 or newer, then open **Tools > Rebuild Mapper** and select **Export JSON**. The report is generated on demand for the current site and isn't stored by the plugin. No ACF installation is required.
@@ -61,3 +71,5 @@ Usage includes top-level fields and direct subfields of top-level repeaters. Sub
 8. Compare a top-level ACF relationship field with an empty selection and a known valid selection. The empty selection should not increase `posts_with_valid`, and multiple valid targets on one post should increase it by only one.
 9. Save multiple repeater rows with valid links in the same subfield on one post. Confirm that post contributes only once to the subfield's `posts_with_valid`, and check that any stale metadata beyond the saved row count does not contribute.
 10. Export Markdown with schema and relationships selected. Compare a known post type's attached taxonomies and a taxonomy's named term parents against WordPress. Compare an ACF group's full AND/OR rules, active state, nested field paths, and relationship targets against ACF. A template-only group must remain in the catalogue without being automatically assigned to every post type; unrestricted targets must not become guessed links. Check that pipes, newlines, HTML, and Markdown characters in labels cannot split table rows or insert markup. With ACF unavailable, the post type and taxonomy tables must still render with an explicit ACF-unavailable message. With relationships selected alone, usage tables must still render independently of schema.
+11. Open the Tools page with a GET request. Confirm schema and relationships are selected, Build Content Map is primary, and no discovery report appears until submitted. Build the map and verify every top-level and nested accordion starts closed and can be toggled with the keyboard. Compare the displayed field groups, nested paths, term parents, and usage counts with fresh JSON and Markdown exports while site data is unchanged.
+12. Build with each combination of schema and relationship checkboxes and confirm the selection is preserved and only requested sections appear. Export both formats from the same form and verify that each still downloads instead of rendering inline. On a narrow viewport, verify tables scroll without widening the admin page. Confirm labels containing HTML display as text. A direct build POST without a valid nonce or without manage_options must not run discovery. Confirm no report is saved in browser storage or plugin database options.

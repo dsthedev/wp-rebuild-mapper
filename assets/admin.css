@@ -1,0 +1,68 @@
+.wp-rebuild-mapper {
+	--mapper-border: #c3c4c7;
+	--mapper-focus: #2271b1;
+}
+
+.wp-rebuild-mapper .mapper-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.wp-rebuild-mapper .mapper-section {
+	border-top: 1px solid var(--mapper-border);
+	margin: 0;
+}
+
+.wp-rebuild-mapper .mapper-report > .mapper-section:last-child {
+	border-bottom: 1px solid var(--mapper-border);
+}
+
+.wp-rebuild-mapper .mapper-section > summary {
+	cursor: pointer;
+	padding: 14px 8px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #1d2327;
+	overflow-wrap: anywhere;
+}
+
+.wp-rebuild-mapper .mapper-section > summary:hover {
+	background: #f0f0f1;
+}
+
+.wp-rebuild-mapper .mapper-section > summary:focus-visible,
+.wp-rebuild-mapper .mapper-table-scroll:focus-visible {
+	outline: 2px solid var(--mapper-focus);
+	outline-offset: -2px;
+}
+
+.wp-rebuild-mapper .mapper-section-body {
+	padding: 0 8px 16px;
+	min-width: 0;
+}
+
+.wp-rebuild-mapper .mapper-table-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+	margin-top: 12px;
+}
+
+.wp-rebuild-mapper .widefat {
+	min-width: 640px;
+	table-layout: fixed;
+}
+
+.wp-rebuild-mapper .widefat th,
+.wp-rebuild-mapper .widefat td {
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 782px) {
+	.wp-rebuild-mapper .mapper-section-body {
+		padding-right: 0;
+		padding-left: 0;
+	}
+}
